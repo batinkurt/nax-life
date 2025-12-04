@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NAX.TECH: Run with Rüzgar</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #110022;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --glitch-green: #00ff41;
+            --scanline-color: rgba(0, 0, 0, 0.5);
+            --ui-bg: rgba(0, 0, 0, 0.85);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'VT323', monospace;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.2);
+        }
+
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            z-index: 10;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 20;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 28px;
+            color: var(--neon-blue);
+            text-shadow: 2px 2px 0px #000;
+            width: 100%;
+        }
+
+        .hud-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ui-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            pointer-events: auto;
+            text-align: center;
+            color: white;
+            transition: opacity 0.5s;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 5rem;
+            margin: 0;
+            color: var(--neon-pink);
+            text-shadow: 4px 4px 0px var(--neon-blue);
+            animation: glitch-text 3s infinite;
+            line-height: 0.9;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--neon-blue);
+            margin-bottom: 3rem;
+            letter-spacing: 4px;
+        }
+
+        /* Customization UI */
+        .custom-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+        
+        .arrow-btn {
+            background: none;
+            border: none;
+            color: var(--neon-blue);
+            font-size: 3rem;
+            cursor: pointer;
+            padding: 0 20px;
+            animation: pulse 2s infinite;
+        }
+        .arrow-btn:hover { color: white; transform: scale(1.2); }
+
+        .preview-label {
+            font-size: 1.5rem;
+            color: #fff;
+            width: 150px;
+            text-align: center;
+        }
+
+        .btn {
+            background: transparent;
+            border: 2px solid var(--glitch-green);
+            color: var(--glitch-green);
+            font-family: 'VT323', monospace;
+            font-size: 2rem;
+            padding: 15px 40px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px var(--glitch-green);
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: var(--glitch-green);
+            color: #000;
+            transform: scale(1.05);
+        }
+        
+        .btn-share {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+        .btn-share:hover { background: var(--neon-blue); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: left;
+            margin: 20px 0;
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+        }
+
+        .story-text {
+            font-size: 2rem;
+            line-height: 1.4;
+            color: white;
+            max-width: 800px;
+            white-space: pre-wrap;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .skip-hint {
+            margin-top: 40px; 
+            font-size: 16px; 
+            color: #888; 
+            animation: blink 2s infinite;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: absolute;
+            bottom: 50px;
+            background: #fff;
+            color: #000;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .toast.show { opacity: 1; }
+
+        /* Customization Overlay Area - Invisible div to capture clicks over canvas if needed */
+        #customizeUI {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none; /* Let clicks pass through generally */
+        }
+
+        .selector-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto; 
+            width: 100%;
+            padding: 0 50px;
+            box-sizing: border-box;
+        }
+
+        .char-name {
+            font-size: 1.5rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        @keyframes glitch-text {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            21% { transform: skew(2deg); }
+            22% { transform: skew(0deg); }
+            100% { transform: skew(0deg); }
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div class="crt-overlay"></div>
+    
+    <div class="ui-layer">
+        <div class="hud" id="hud" style="display:none;">
+            <div class="hud-hearts" id="heartsDisplay"></div>
+            <div class="hud-stats">
+                <span style="color:#ffccaa;">🍖 <span id="foodCount">0</span></span>
+                <span style="color:#00f3ff;">🎧 <span id="headphoneCount">0</span></span>
+                <span style="color:#ff0044;">💊 <span id="pillCount">0</span></span>
+            </div>
+            <div class="score">DIST: <span id="scoreDisplay">0</span>m</div>
+        </div>
+    </div>
+
+    <!-- START / CUSTOMIZE SCREEN -->
+    <div id="startScreen" class="screen">
+        <h1>NAX.TECH</h1>
+        <h2>RUN WITH RÜZGAR</h2>
+        
+        <!-- Customization Controls Overlay -->
+        <div style="position: relative; width: 500px; height: 250px; margin-bottom: 20px;">
+            <!-- Nax Selector -->
+            <div style="position: absolute; left: 0; top: 80px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
+                <button class="arrow-btn" onclick="changeChar('nax', -1)">◄</button>
+                <div style="width: 100px;"></div> <!-- Spacer for canvas character -->
+                <button class="arrow-btn" onclick="changeChar('nax', 1)">►</button>
+            </div>
+            
+            <!-- Ruzgar Selector -->
+            <div style="position: absolute; left: 0; top: 180px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
+                <button class="arrow-btn" onclick="changeChar('ruzgar', -1)">◄</button>
+                <div style="width: 100px;"></div> <!-- Spacer for canvas character -->
+                <button class="arrow-btn" onclick="changeChar('ruzgar', 1)">►</button>
+            </div>
+            
+            <!-- Labels -->
+            <div style="position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: #aaa;">
+                <span id="naxName">PANDA NAX</span>
+            </div>
+             <div style="position: absolute; bottom: -20px; width: 100%; display: flex; justify-content: space-around; color: #aaa;">
+                <span id="ruzgarName">TERRIER</span>
+            </div>
+        </div>
+
+        <button class="btn" onclick="startStory()">Take a walk with Rüzgar</button>
+    </div>
+
+    <!-- STORY SCREEN -->
+    <div id="storyScreen" class="screen hidden" onclick="skipIntro()">
+        <div class="story-text" id="storyText"></div>
+        <div class="skip-hint">Tap to Skip</div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="gameOverScreen" class="screen hidden">
+        <h1 style="color: #ff3333;">SIGNAL LOST</h1>
+        <p class="story-text" style="font-size: 1.5rem;">But Rüzgar stayed.</p>
+        
+        <div class="stats-grid">
+            <div>🎧 TUNES:</div> <div id="endHeadphones">0</div>
+            <div>🍖 SNACKS:</div> <div id="endFood">0</div>
+            <div>💊 PILLS:</div> <div id="endPills">0</div>
+            <div style="color:var(--neon-blue)">DISTANCE:</div> <div id="finalScore">0</div>
+        </div>
+
+        <div class="btn-group" style="display:flex; gap: 20px;">
+            <button class="btn btn-share" onclick="shareStats()">SHARE RUN</button>
+            <button class="btn" onclick="resetGame()">RECONNECT</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Stats copied to clipboard!</div>
+</div>
+
+<script>
+/**
+ * NAX.TECH: RUN WITH RÜZGAR
+ * A Single File HTML Game
+ */
+
+// --- CONFIGURATION ---
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 450;
+const GRAVITY = 0.6;
+const JUMP_FORCE = -12;
+const GROUND_Y = 380;
+const SPRITE_SCALE = 3;
+
+// --- ASSETS: MULTIPLE VARIATIONS ---
+
+// 1. NAX VARIATIONS (Added 'hair' color)
+const NAX_VARIANTS = [
+    { name: "PANDA NAX", colors: { hat: '#fff', hair: '#6b4226', skin: '#ffccaa', clothes: '#ff00ff', boots: '#00f3ff' } }, // Brown Hair
+    { name: "SAKURA NAX", colors: { hat: '#ffb7c5', hair: '#f4d03f', skin: '#ffe0bd', clothes: '#ff69b4', boots: '#fff' } }, // Blonde Hair
+    { name: "CYBER NAX", colors: { hat: '#333', hair: '#ff0055', skin: '#e0e0e0', clothes: '#00f3ff', boots: '#ffff00' } }  // Neon Pink Hair
+];
+
+// Base Nax Matrix (Colors swapped dynamically)
+// H=Hat, S=Skin, C=Clothes, B=Boots, E=Eyes/Black Details, A=Hair (Long)
+const NAX_BASE_MATRIX = {
+    idle: [
+        ['T','T','E','E','T','T','T','T','E','E','T','T'], // Panda Ears
+        ['T','E','H','H','E','T','T','E','H','H','E','T'], // Hat outline
+        ['E','H','H','H','H','H','H','H','H','H','H','E'], // Hat body
+        ['E','H','E','E','H','H','H','H','E','E','H','E'], // Eyes on hat
+        ['E','H','H','H','H','H','H','H','H','H','H','E'],
+        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Face + Hair bangs/sides
+        ['A','A','S','E','S','S','S','S','E','S','A','A'], // Long Hair sides
+        ['A','A','S','S','S','C','C','S','S','S','A','A'], // Long Hair over shoulders
+        ['T','A','C','C','C','C','C','C','C','C','A','T'], // Hair tips
+        ['T','C','B','B','C','C','C','C','B','B','C','T'], // Arms/Hands
+        ['T','B','T','T','C','C','C','C','T','T','B','T'], 
+        ['T','T','T','E','E','T','T','E','E','T','T','T'], // Legs
+        ['T','T','T','E','E','T','T','E','E','T','T','T'],
+        ['T','T','T','B','B','T','T','B','B','T','T','T']  // Boots
+    ],
+    run: [
+        ['T','T','E','E','T','T','T','T','E','E','T','T'],
+        ['T','E','H','H','E','T','T','E','H','H','E','T'],
+        ['E','H','H','H','H','H','H','H','H','H','H','E'],
+        ['E','H','E','E','H','H','H','H','E','E','H','E'],
+        ['E','H','H','H','H','H','H','H','H','H','H','E'],
+        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Hair moving
+        ['A','T','S','E','S','S','S','S','E','S','T','A'], // Hair bouncing out
+        ['A','A','S','S','S','C','C','S','S','S','A','A'], 
+        ['A','A','C','C','C','C','C','C','C','C','A','A'], // Hair flowing back
+        ['T','T','B','B','C','C','C','C','B','B','T','T'], // Arms
+        ['T','B','T','T','C','C','C','C','T','T','B','T'], 
+        ['T','T','T','E','E','T','T','T','T','T','T','T'], // Legs
+        ['T','T','T','E','E','T','T','E','E','T','T','T'],
+        ['T','T','B','B','T','T','T','B','B','T','T','T']
+    ],
+    crouch: [
+        ['T','T','T','T','T','T','T','T','T','T','T','T'], 
+        ['T','T','T','T','T','T','T','T','T','T','T','T'],
+        ['T','T','T','T','T','T','T','T','T','T','T','T'],
+        ['T','T','E','E','T','T','T','T','E','E','T','T'], 
+        ['T','E','H','H','E','T','T','E','H','H','E','T'],
+        ['E','H','H','H','H','H','H','H','H','H','H','E'], 
+        ['E','H','E','E','H','H','H','H','E','E','H','E'], 
+        ['E','H','H','H','H','H','H','H','H','H','H','E'],
+        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Hair low
+        ['A','A','C','C','C','C','C','C','C','C','A','A'], // Hair covering shoulders
+        ['T','C','B','B','C','C','C','C','B','B','C','T'], // Arms out
+        ['T','T','T','B','B','T','T','B','B','T','T','T'],
+        ['T','T','T','B','B','T','T','B','B','T','T','T'],
+        ['T','B','B','T','T','T','T','T','T','B','B','T']
+    ]
+};
+
+// 2. RUZGAR VARIATIONS
+const RUZGAR_VARIANTS = [
+    { name: "TERRIER", colors: { base: '#fff', spot: '#000' } }, // White w/ Black Spots
+    { name: "COCOA", colors: { base: '#d2b48c', spot: '#8b4513' } }, // Tan w/ Brown Spots
+    { name: "MOON", colors: { base: '#eee', spot: '#aaa' } } // Grey/White
+];
+
+// Base Ruzgar Matrix
+// B=Base Coat, S=Spot Color, E=Eyes/Nose (Black), R=Collar
+const RUZGAR_BASE_MATRIX = {
+    idle: [
+        ['T','S','T','T','T','T','S','T','T','T'], 
+        ['T','S','B','B','B','B','S','T','T','T'], 
+        ['T','B','E','B','B','E','B','T','T','T'], 
+        ['T','B','B','E','E','B','B','T','T','T'], 
+        ['T','T','R','R','R','R','T','T','T','T'], 
+        ['T','B','B','S','S','B','B','T','B','T'], 
+        ['T','B','B','S','S','B','B','T','B','T'], 
+        ['T','B','T','T','T','T','B','T','T','T'], 
+        ['T','E','T','T','T','T','E','T','T','T']  
+    ],
+    run: [
+        ['T','S','T','T','T','T','S','T','T','T'],
+        ['T','S','B','B','B','B','S','T','T','T'],
+        ['T','B','E','B','B','E','B','T','T','T'],
+        ['T','B','B','E','E','B','B','T','T','T'],
+        ['T','T','R','R','R','R','T','T','T','T'],
+        ['T','B','B','S','S','B','B','T','T','T'], 
+        ['T','B','B','S','S','B','B','T','B','B'], 
+        ['T','T','B','T','T','B','T','T','T','T'], 
+        ['T','T','E','T','T','E','T','T','T','T'] 
+    ]
+};
+
+const HEART_SPRITE = [
+    ['T','R','R','T','R','R','T'],
+    ['R','W','R','R','R','R','R'],
+    ['R','R','R','R','R','R','R'],
+    ['T','R','R','R','R','R','T'],
+    ['T','T','R','R','R','T','T'],
+    ['T','T','T','R','T','T','T']
+];
+
+const TOWER_SPRITE = [
+    ['T','T','T','R','T','T','T'], ['T','T','G','G','G','T','T'],
+    ['T','T','T','G','T','T','T'], ['T','T','G','G','G','T','T'],
+    ['T','G','T','G','T','G','T'], ['T','G','T','G','T','G','T'],
+    ['G','T','T','G','T','T','G'], ['G','T','T','G','T','T','G'],
+    ['G','T','T','G','T','T','G']
+];
+
+const TV_SPRITE = [
+    ['G','G','G','G','G','G','G'], ['G','C','C','C','C','C','G'],
+    ['G','C','W','B','C','C','G'], ['G','C','B','B','B','C','G'],
+    ['G','C','C','C','C','C','G'], ['G','G','G','G','G','G','G'],
+    ['T','T','T','G','T','T','T'], ['T','T','G','G','G','T','T']
+];
+
+const DRONE_SPRITE = [
+    ['T','T','G','G','G','T','T'], ['T','G','R','R','R','G','T'],
+    ['G','R','W','W','W','R','G'], ['G','R','W','W','W','R','G'],
+    ['T','G','R','R','R','G','T'], ['T','T','C','C','C','T','T'], ['T','C','T','C','T','C','T']
+];
+
+const PILL_SPRITE = [
+    ['T','T','T','T','T','T'], ['T','R','R','W','W','T'],
+    ['T','R','R','W','W','T'], ['T','R','R','W','W','T'], ['T','T','T','T','T','T']
+];
+
+const HEADPHONE_SPRITE = [
+    ['T','T','C','C','C','T','T'], ['T','C','T','T','T','C','T'],
+    ['C','B','T','T','T','B','C'], ['C','B','B','T','B','B','C'],
+    ['T','B','B','T','B','B','T'], ['T','T','T','T','T','T','T']
+];
+
+const DOGFOOD_SPRITE = [
+    ['T','T','T','T','T','T','T'], ['T','S','S','S','S','S','T'],
+    ['B','R','R','R','R','R','B'], ['T','B','R','R','R','B','T'], ['T','T','B','B','B','T','T']
+];
+
+// --- AUDIO SYSTEM ---
+const Audio = {
+    ctx: null,
+    init: function() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    playTone: function(freq, type, duration, vol=0.1) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    jump: function() { this.playTone(350, 'square', 0.1, 0.05); },
+    slide: function() { this.playTone(150, 'sawtooth', 0.2, 0.03); },
+    bark: function() { this.playTone(800, 'triangle', 0.05, 0.05); },
+    collect: function() { this.playTone(1200, 'sine', 0.2); },
+    lifeUp: function() { 
+        this.playTone(600, 'sine', 0.1); 
+        setTimeout(() => this.playTone(800, 'sine', 0.1), 100);
+        setTimeout(() => this.playTone(1000, 'sine', 0.2), 200);
+    },
+    eat: function() { this.playTone(200, 'triangle', 0.1, 0.1); },
+    hit: function() { 
+        this.playTone(100, 'sawtooth', 0.3); 
+        this.playTone(50, 'sawtooth', 0.3);
+    },
+    select: function() { this.playTone(600, 'square', 0.05, 0.05); }
+};
+
+// --- GAME STATE ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let frames = 0;
+let animationId;
+let isRunning = false;
+let gameSpeed = 5.0; 
+let score = 0;
+let hearts = 3;
+
+// Selection State
+let currentNaxIndex = 0;
+let currentRuzgarIndex = 0;
+let isCustomizing = true;
+
+// Entities
+let player;
+let ruzgar;
+let obstacles = [];
+let items = [];
+let particles = [];
+let spawnTimer = 0;
+let damageShake = 0;
+
+let stats = { headphones: 0, food: 0, pills: 0 };
+
+function resize() {
+    let scale = Math.min(window.innerWidth / CANVAS_WIDTH, window.innerHeight / CANVAS_HEIGHT);
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+    canvas.style.width = (CANVAS_WIDTH * scale) + 'px';
+    canvas.style.height = (CANVAS_HEIGHT * scale) + 'px';
+    ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- CUSTOMIZATION LOGIC ---
+function changeChar(type, dir) {
+    Audio.init();
+    Audio.select();
+    if(type === 'nax') {
+        currentNaxIndex = (currentNaxIndex + dir + NAX_VARIANTS.length) % NAX_VARIANTS.length;
+        document.getElementById('naxName').innerText = NAX_VARIANTS[currentNaxIndex].name;
+    } else {
+        currentRuzgarIndex = (currentRuzgarIndex + dir + RUZGAR_VARIANTS.length) % RUZGAR_VARIANTS.length;
+        document.getElementById('ruzgarName').innerText = RUZGAR_VARIANTS[currentRuzgarIndex].name;
+    }
+}
+
+// --- RENDERING HELPERS ---
+
+function drawNaxSprite(ctx, frameMatrix, x, y, scale, variant) {
+    const pal = variant.colors;
+    frameMatrix.forEach((row, rI) => {
+        row.forEach((col, cI) => {
+            if (col === 'T') return;
+            let c = '#fff';
+            if (col === 'H') c = pal.hat;
+            if (col === 'S') c = pal.skin;
+            if (col === 'C') c = pal.clothes;
+            if (col === 'B') c = pal.boots;
+            if (col === 'E') c = '#111'; // Black definition
+            if (col === 'A') c = pal.hair; // Hair Color
+            ctx.fillStyle = c;
+            ctx.fillRect(x + cI * scale, y + rI * scale, scale, scale);
+        });
+    });
+}
+
+function drawRuzgarSprite(ctx, frameMatrix, x, y, scale, variant) {
+    const pal = variant.colors;
+    frameMatrix.forEach((row, rI) => {
+        row.forEach((col, cI) => {
+            if (col === 'T') return;
+            let c = '#fff';
+            if (col === 'B') c = pal.base;
+            if (col === 'S') c = pal.spot;
+            if (col === 'E') c = '#111';
+            if (col === 'R') c = '#ff0044';
+            if (col === 'W') c = '#fff'; // Eye whites
+            ctx.fillStyle = c;
+            ctx.fillRect(x + cI * scale, y + rI * scale, scale, scale);
+        });
+    });
+}
+
+function drawGeneralSprite(ctx, matrix, x, y, scale, type = null) {
+    matrix.forEach((row, rI) => {
+        row.forEach((col, cI) => {
+            if (col !== 'T') {
+                ctx.fillStyle = getObjectColor(col, type);
+                ctx.fillRect(x + cI * scale, y + rI * scale, scale, scale);
+            }
+        });
+    });
+}
+
+function getObjectColor(code, type) {
+    if (type === 'TV' && code === 'C' && Math.random() > 0.9) return '#fff'; 
+    if (type === 'DRONE' && code === 'R' && Math.random() > 0.8) return '#ffff00'; 
+    switch(code) {
+        case 'W': return '#ffffff';
+        case 'B': return '#111111'; 
+        case 'S': return '#ffccaa'; 
+        case 'C': return '#00f3ff'; 
+        case 'R': return '#ff0044'; 
+        case 'G': return '#555555'; 
+        default: return '#ff00ff';
+    }
+}
+
+// --- CLASSES ---
+
+class Entity {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.dy = 0;
+        this.type = type; // 'nax' or 'ruzgar'
+        this.grounded = false;
+        this.frameTimer = 0;
+        this.crouching = false;
+        
+        // Use base idle for size
+        let baseMatrix = (type === 'nax') ? NAX_BASE_MATRIX.idle : RUZGAR_BASE_MATRIX.idle;
+        this.baseH = baseMatrix.length * SPRITE_SCALE;
+        this.w = baseMatrix[0].length * SPRITE_SCALE;
+        this.h = this.baseH;
+    }
+
+    update() {
+        this.y += this.dy;
+        if (this.y + this.h < GROUND_Y) {
+            this.dy += GRAVITY;
+            this.grounded = false;
+        } else {
+            this.dy = 0;
+            this.grounded = true;
+            this.y = GROUND_Y - this.h;
+        }
+
+        if (this.crouching) {
+            this.h = this.baseH * 0.6; 
+            this.y = GROUND_Y - this.h; 
+        } else {
+            this.h = this.baseH;
+        }
+        this.frameTimer++;
+    }
+
+    draw(ctx, isMoving) {
+        if (this.type === 'nax') {
+            let variant = NAX_VARIANTS[currentNaxIndex];
+            let frame = (this.crouching) ? NAX_BASE_MATRIX.crouch : 
+                        ((isMoving && Math.floor(this.frameTimer / 10) % 2 === 0) ? NAX_BASE_MATRIX.run : NAX_BASE_MATRIX.idle);
+            
+            // Adjust Y for crouch sprite empty space
+            let drawY = this.y;
+            if(this.crouching) drawY = GROUND_Y - (frame.length * SPRITE_SCALE);
+
+            drawNaxSprite(ctx, frame, this.x, drawY, SPRITE_SCALE, variant);
+
+        } else {
+            let variant = RUZGAR_VARIANTS[currentRuzgarIndex];
+            let frame = (isMoving && Math.floor(this.frameTimer / 10) % 2 === 0) ? RUZGAR_BASE_MATRIX.run : RUZGAR_BASE_MATRIX.idle;
+            drawRuzgarSprite(ctx, frame, this.x, this.y, SPRITE_SCALE, variant);
+        }
+    }
+}
+
+class Obstacle {
+    constructor() {
+        this.x = CANVAS_WIDTH;
+        this.markedForDeletion = false;
+        let rand = Math.random();
+        if (rand < 0.4) this.type = 'TOWER';
+        else if (rand < 0.7) this.type = 'TV';
+        else this.type = 'DRONE';
+        
+        if (this.type === 'TOWER') {
+            this.sprite = TOWER_SPRITE; this.scale = 4;
+            this.y = GROUND_Y - (this.sprite.length * 4);
+        } else if (this.type === 'TV') {
+            this.sprite = TV_SPRITE; this.scale = 4;
+            this.y = GROUND_Y - 100 - (Math.random() * 40); 
+        } else {
+            this.sprite = DRONE_SPRITE; this.scale = 4;
+            this.y = GROUND_Y - 65; 
+        }
+        this.w = this.sprite[0].length * this.scale;
+        this.h = this.sprite.length * this.scale;
+    }
+    update() { this.x -= gameSpeed; if (this.x + this.w < 0) this.markedForDeletion = true; }
+    draw(ctx) { drawGeneralSprite(ctx, this.sprite, this.x, this.y, this.scale, this.type); }
+}
+
+class Item {
+    constructor() {
+        this.x = CANVAS_WIDTH;
+        this.y = GROUND_Y - 90 - (Math.random() * 50);
+        this.markedForDeletion = false;
+        let rand = Math.random();
+        if (rand < 0.1) { this.type = 'PILL'; this.sprite = PILL_SPRITE; }
+        else if (rand < 0.4) { this.type = 'FOOD'; this.sprite = DOGFOOD_SPRITE; this.y = GROUND_Y - 40; }
+        else { this.type = 'HEADPHONE'; this.sprite = HEADPHONE_SPRITE; }
+        this.w = this.sprite[0].length * SPRITE_SCALE;
+        this.h = this.sprite.length * SPRITE_SCALE;
+    }
+    update() { this.x -= gameSpeed; if (this.x + this.w < 0) this.markedForDeletion = true; }
+    draw(ctx) { drawGeneralSprite(ctx, this.sprite, this.x, this.y, SPRITE_SCALE); }
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.size = Math.random() * 6 + 2;
+        this.speedX = Math.random() * 4 - 2; this.speedY = Math.random() * 4 - 2;
+        this.color = color; this.life = 1.0;
+    }
+    update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.05; }
+    draw(ctx) { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1.0; }
+}
+
+// --- BACKGROUND SYSTEM ---
+class Building {
+    constructor(x) {
+        this.x = x; this.w = 40 + Math.random() * 60; this.h = 50 + Math.random() * 150;
+        this.windows = []; for(let i=10; i<this.h-10; i+=20) if(Math.random()>0.3) this.windows.push(i);
+    }
+    draw(ctx) {
+        ctx.fillStyle = '#1a0d26'; ctx.fillRect(this.x, GROUND_Y - this.h, this.w, this.h);
+        ctx.fillStyle = '#3a1f52'; this.windows.forEach(wy => ctx.fillRect(this.x + 5, GROUND_Y - wy, this.w - 10, 10));
+    }
+}
+let buildings = []; let stars = [];
+
+function initBackground() {
+    buildings = []; stars = [];
+    for(let i=0; i<CANVAS_WIDTH + 100; i+=80) buildings.push(new Building(i));
+    for(let i=0; i<30; i++) stars.push({x: Math.random() * CANVAS_WIDTH, y: Math.random() * (CANVAS_HEIGHT/2), size: Math.random() * 2 + 1});
+}
+
+// --- GAME LOGIC ---
+
+function initGame() {
+    player = new Entity(50, GROUND_Y, 'nax');
+    ruzgar = new Entity(150, GROUND_Y, 'ruzgar');
+    obstacles = []; items = []; particles = [];
+    score = 0; hearts = 3; gameSpeed = 5.0; frames = 0;
+    stats = { headphones: 0, food: 0, pills: 0 };
+    initBackground();
+    updateHUD();
+}
+
+function updateHUD() {
+    document.getElementById('scoreDisplay').innerText = Math.floor(score);
+    document.getElementById('headphoneCount').innerText = stats.headphones;
+    document.getElementById('foodCount').innerText = stats.food;
+    document.getElementById('pillCount').innerText = stats.pills;
+}
+
+function drawHUD(ctx) {
+    const scale = 4; const startX = 20; const startY = 20; const gap = 30;
+    for (let i = 0; i < hearts; i++) {
+        let hX = startX + (i * gap);
+        drawGeneralSprite(ctx, HEART_SPRITE, hX, startY, scale); // Reusing general drawer
+    }
+}
+
+function drawRope(ctx) {
+    if (!player || !ruzgar) return;
+    const naxHandX = player.x + (10 * SPRITE_SCALE); const naxHandY = player.y + (10 * SPRITE_SCALE);
+    const ruzgarNeckX = ruzgar.x + (1 * SPRITE_SCALE); const ruzgarNeckY = ruzgar.y + (5 * SPRITE_SCALE);
+    ctx.strokeStyle = '#aaaaaa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(naxHandX, naxHandY);
+    let midX = (naxHandX + ruzgarNeckX) / 2; let midY = (naxHandY + ruzgarNeckY) / 2 + 20; 
+    ctx.quadraticCurveTo(midX, midY, ruzgarNeckX, ruzgarNeckY); ctx.stroke();
+}
+
+function spawnLogic() {
+    spawnTimer--;
+    if (spawnTimer <= 0) {
+        if (Math.random() > 0.4) obstacles.push(new Obstacle());
+        else items.push(new Item());
+        let diff = Math.floor(score / 500); let base = 90 - (diff * 5); if (base < 40) base = 40;
+        spawnTimer = base + Math.random() * 30; 
+    }
+}
+
+function checkCollisions() {
+    // Shared collision logic
+    let hit = false;
+    obstacles.forEach(obs => {
+        if(!obs.markedForDeletion) {
+            // Check Ruzgar
+            if(ruzgar.x < obs.x+obs.w-10 && ruzgar.x+ruzgar.w > obs.x+10 && ruzgar.y < obs.y+obs.h && ruzgar.y+ruzgar.h > obs.y) {
+                hit = true; createParticles(ruzgar.x, ruzgar.y, '#ff0000');
+            }
+            // Check Nax
+            if(!hit && player.x < obs.x+obs.w-10 && player.x+player.w > obs.x+10 && player.y < obs.y+obs.h && player.y+player.h > obs.y) {
+                hit = true; createParticles(player.x, player.y, '#ff0000');
+            }
+            if(hit) {
+                Audio.hit(); hearts--; damageShake = 15; obs.markedForDeletion = true;
+                Audio.bark(); ruzgar.dy = -5; if(hearts <= 0) gameOver();
+            }
+        }
+    });
+
+    items.forEach(item => {
+        let col = false;
+        if( (player.x < item.x+item.w && player.x+player.w > item.x && player.y < item.y+item.h && player.y+player.h > item.y) ||
+            (ruzgar.x < item.x+item.w && ruzgar.x+ruzgar.w > item.x && ruzgar.y < item.y+item.h && ruzgar.y+ruzgar.h > item.y) ) col = true;
+        if(col) {
+            item.markedForDeletion = true;
+            if (item.type === 'HEADPHONE') { Audio.collect(); score += 50; stats.headphones++; createParticles(item.x, item.y, '#00f3ff'); }
+            else if (item.type === 'FOOD') { Audio.eat(); Audio.bark(); score += 20; stats.food++; createParticles(item.x, item.y, '#ffccaa'); ruzgar.dy = -8; }
+            else if (item.type === 'PILL') { Audio.lifeUp(); hearts++; stats.pills++; createParticles(item.x, item.y, '#ff0044'); }
+        }
+    });
+}
+
+function createParticles(x, y, color) { for(let i=0; i<8; i++) particles.push(new Particle(x, y, color)); }
+
+// --- LOOPS ---
+
+function customizationLoop() {
+    if (!isCustomizing) return;
+    
+    // Brighter Background for vibrancy
+    ctx.fillStyle = '#1a0d26'; // Deep purple from game background
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Draw Brighter Grid Background
+    ctx.strokeStyle = '#00f3ff'; // Neon blue grid
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let i=0; i<CANVAS_WIDTH; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,CANVAS_HEIGHT); }
+    for(let i=0; i<CANVAS_HEIGHT; i+=50) { ctx.moveTo(0,i); ctx.lineTo(CANVAS_WIDTH,i); }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // Draw Large Characters in Center
+    // Scale 6 for preview
+    const PREVIEW_SCALE = 8;
+    
+    // Draw Nax
+    let naxVar = NAX_VARIANTS[currentNaxIndex];
+    let naxW = NAX_BASE_MATRIX.idle[0].length * PREVIEW_SCALE;
+    let naxX = (CANVAS_WIDTH / 2) - naxW - 20;
+    let naxY = (CANVAS_HEIGHT / 2) - 80;
+    drawNaxSprite(ctx, NAX_BASE_MATRIX.idle, naxX, naxY, PREVIEW_SCALE, naxVar);
+
+    // Draw Ruzgar
+    let ruzVar = RUZGAR_VARIANTS[currentRuzgarIndex];
+    let ruzX = (CANVAS_WIDTH / 2) + 20;
+    let ruzY = (CANVAS_HEIGHT / 2) - 30; // Dog is shorter, adjust Y
+    drawRuzgarSprite(ctx, RUZGAR_BASE_MATRIX.idle, ruzX, ruzY, PREVIEW_SCALE, ruzVar);
+
+    requestAnimationFrame(customizationLoop);
+}
+
+function gameLoop() {
+    if (!isRunning) return;
+
+    ctx.save();
+    if (damageShake > 0) { ctx.translate(Math.random()*10 - 5, Math.random()*10 - 5); damageShake--; }
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    grad.addColorStop(0, '#0d001a'); grad.addColorStop(1, '#2a0033');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    ctx.fillStyle = '#ffffff';
+    stars.forEach(s => {
+        s.x -= gameSpeed * 0.1; if (s.x < 0) s.x = CANVAS_WIDTH;
+        ctx.globalAlpha = Math.random() * 0.5 + 0.3; ctx.fillRect(s.x, s.y, s.size, s.size);
+    });
+    ctx.globalAlpha = 1.0;
+
+    buildings.forEach(b => { b.x -= gameSpeed * 0.3; b.draw(ctx); });
+    if (buildings[0].x + buildings[0].w < 0) {
+        buildings.shift(); buildings.push(new Building(buildings[buildings.length-1].x + buildings[buildings.length-1].w + 10));
+    }
+
+    // Floor lines
+    ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(CANVAS_WIDTH, GROUND_Y); ctx.stroke();
+    let offset = (frames * gameSpeed) % 100;
+    ctx.strokeStyle = '#aa00aa'; ctx.globalAlpha = 0.5;
+    for (let i = 0; i < CANVAS_WIDTH + 200; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i - offset, GROUND_Y); ctx.lineTo(i - offset - 200, CANVAS_HEIGHT); ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+
+    // Entities
+    player.update(); ruzgar.update();
+    obstacles.forEach(o => o.update()); items.forEach(i => i.update()); particles.forEach(p => p.update());
+    
+    obstacles = obstacles.filter(o => !o.markedForDeletion);
+    items = items.filter(i => !i.markedForDeletion);
+    particles = particles.filter(p => p.life > 0);
+
+    checkCollisions();
+    drawRope(ctx);
+
+    player.draw(ctx, true); ruzgar.draw(ctx, true);
+    obstacles.forEach(o => o.draw(ctx)); items.forEach(i => i.draw(ctx)); particles.forEach(p => p.draw(ctx));
+
+    // Floor Fill
+    ctx.fillStyle = '#000'; ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+    
+    drawHUD(ctx);
+
+    if (gameSpeed < 12) gameSpeed += 0.0005;
+    score += (gameSpeed / 10);
+    updateHUD();
+    spawnLogic();
+
+    ctx.restore();
+    frames++;
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+// --- INPUTS ---
+function handleInput(e) {
+    if(!isRunning) return;
+    if(["Space","ArrowUp","ArrowDown"].indexOf(e.code) > -1) e.preventDefault();
+    if(e.type==='keydown' && (e.code==='Space'||e.code==='ArrowUp')) jump();
+    if(e.type==='keydown' && (e.code==='ArrowDown'||e.code==='KeyS')) crouch(true);
+    if(e.type==='keyup' && (e.code==='ArrowDown'||e.code==='KeyS')) crouch(false);
+    
+    // Touch
+    if(e.type==='touchstart') { touchStartY = e.changedTouches[0].screenY; touchStartX = e.changedTouches[0].screenX; }
+    if(e.type==='touchend') {
+        let dy = e.changedTouches[0].screenY - touchStartY;
+        if(Math.abs(dy) > 30 && dy > 0) { crouch(true); setTimeout(()=>crouch(false),800); } // Swipe Down
+        else jump(); // Tap or Swipe Up
+    }
+}
+
+function jump() {
+    if(ruzgar.grounded) {
+        ruzgar.dy = JUMP_FORCE; ruzgar.grounded = false; Audio.jump();
+        setTimeout(() => { if(player.grounded && !player.crouching) { player.dy = JUMP_FORCE; player.grounded = false; } }, 120);
+    }
+}
+function crouch(isDown) { if(player.grounded) { player.crouching = isDown; if(isDown) Audio.slide(); } }
+
+window.addEventListener('keydown', handleInput);
+window.addEventListener('keyup', handleInput);
+window.addEventListener('touchstart', handleInput);
+window.addEventListener('touchend', handleInput);
+
+// --- FLOW ---
+let typeTimeout;
+function typeWriter(text, elementId, callback) {
+    const el = document.getElementById(elementId); el.textContent = ''; let i = 0;
+    if (typeTimeout) clearTimeout(typeTimeout);
+    function type() {
+        if (!isRunning) {
+             if (i < text.length) { el.textContent += text.charAt(i); i++; typeTimeout = setTimeout(type, 50); } 
+             else { typeTimeout = setTimeout(callback, 1500); }
+        }
+    }
+    type();
+}
+
+function startStory() {
+    Audio.init();
+    isCustomizing = false;
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('storyScreen').classList.remove('hidden');
+    const line1 = "Nax felt lost.\nThe world felt loud.\n\nBut Rüzgar wanted to run.";
+    typeWriter(line1, 'storyText', startGame);
+}
+
+function startGame() {
+    if(isRunning) return;
+    document.getElementById('storyScreen').classList.add('hidden');
+    document.getElementById('hud').style.display = 'flex';
+    isRunning = true;
+    initGame();
+    gameLoop();
+}
+
+function skipIntro() {
+    if(typeTimeout) clearTimeout(typeTimeout);
+    startGame();
+}
+
+function gameOver() {
+    isRunning = false; cancelAnimationFrame(animationId);
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('gameOverScreen').classList.remove('hidden');
+    document.getElementById('finalScore').innerText = Math.floor(score) + "m";
+    document.getElementById('endHeadphones').innerText = stats.headphones;
+    document.getElementById('endFood').innerText = stats.food;
+    document.getElementById('endPills').innerText = stats.pills;
+}
+
+function resetGame() {
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    // Go back to customization
+    isCustomizing = true;
+    document.getElementById('startScreen').classList.remove('hidden');
+    customizationLoop();
+}
+
+function shareStats() {
+    const text = `🚀 NAX.TECH RUN WITH RÜZGAR\n\n🎯 Distance: ${Math.floor(score)}m\n🎧 Headphones: ${stats.headphones}\n🍖 Snacks: ${stats.food}\n💊 Extra Lives: ${stats.pills}\n\nCan you beat the glitch?`;
+    const textarea = document.createElement('textarea'); textarea.value = text; document.body.appendChild(textarea); textarea.select();
+    try { document.execCommand('copy'); document.getElementById('toast').classList.add('show'); setTimeout(()=>document.getElementById('toast').classList.remove('show'), 2000); } catch (e) {}
+    document.body.removeChild(textarea);
+}
+
+// Start customization loop immediately
+customizationLoop();
+
+</script>
+</body>
+</html>
