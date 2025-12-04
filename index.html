@@ -36,7 +36,7 @@
         }
 
         canvas {
-            image-rendering: pixelated;
+            image-rendering: pixelated; /* Critical for crisp look */
             box-shadow: 0 0 40px rgba(0, 243, 255, 0.2);
         }
 
@@ -122,14 +122,6 @@
         }
 
         /* Customization UI */
-        .custom-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-            width: 100%;
-        }
-        
         .arrow-btn {
             background: none;
             border: none;
@@ -138,15 +130,9 @@
             cursor: pointer;
             padding: 0 20px;
             animation: pulse 2s infinite;
+            text-shadow: 0 0 10px var(--neon-blue);
         }
-        .arrow-btn:hover { color: white; transform: scale(1.2); }
-
-        .preview-label {
-            font-size: 1.5rem;
-            color: #fff;
-            width: 150px;
-            text-align: center;
-        }
+        .arrow-btn:hover { color: white; transform: scale(1.2); text-shadow: 0 0 20px white; }
 
         .btn {
             background: transparent;
@@ -221,36 +207,6 @@
         }
         .toast.show { opacity: 1; }
 
-        /* Customization Overlay Area - Invisible div to capture clicks over canvas if needed */
-        #customizeUI {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 600px;
-            height: 300px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            pointer-events: none; /* Let clicks pass through generally */
-        }
-
-        .selector-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: auto; 
-            width: 100%;
-            padding: 0 50px;
-            box-sizing: border-box;
-        }
-
-        .char-name {
-            font-size: 1.5rem;
-            color: var(--neon-pink);
-            text-shadow: 0 0 5px var(--neon-pink);
-        }
-
         @keyframes glitch-text {
             0% { transform: skew(0deg); }
             20% { transform: skew(-2deg); }
@@ -282,32 +238,25 @@
         </div>
     </div>
 
-    <!-- START / CUSTOMIZE SCREEN -->
     <div id="startScreen" class="screen">
         <h1>NAX.TECH</h1>
         <h2>RUN WITH RÜZGAR</h2>
         
-        <!-- Customization Controls Overlay -->
-        <div style="position: relative; width: 500px; height: 250px; margin-bottom: 20px;">
-            <!-- Nax Selector -->
-            <div style="position: absolute; left: 0; top: 80px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
+        <div style="position: relative; width: 600px; height: 300px; margin-bottom: 20px;">
+            <div style="position: absolute; left: 0; top: 100px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
                 <button class="arrow-btn" onclick="changeChar('nax', -1)">◄</button>
-                <div style="width: 100px;"></div> <!-- Spacer for canvas character -->
-                <button class="arrow-btn" onclick="changeChar('nax', 1)">►</button>
+                <div style="width: 100px;"></div> <button class="arrow-btn" onclick="changeChar('nax', 1)">►</button>
             </div>
             
-            <!-- Ruzgar Selector -->
-            <div style="position: absolute; left: 0; top: 180px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
+            <div style="position: absolute; left: 0; top: 220px; width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
                 <button class="arrow-btn" onclick="changeChar('ruzgar', -1)">◄</button>
-                <div style="width: 100px;"></div> <!-- Spacer for canvas character -->
-                <button class="arrow-btn" onclick="changeChar('ruzgar', 1)">►</button>
+                <div style="width: 100px;"></div> <button class="arrow-btn" onclick="changeChar('ruzgar', 1)">►</button>
             </div>
             
-            <!-- Labels -->
-            <div style="position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: #aaa;">
+            <div style="position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around; color: var(--neon-blue); font-size: 1.5rem; text-shadow: 0 0 10px var(--neon-blue);">
                 <span id="naxName">PANDA NAX</span>
             </div>
-             <div style="position: absolute; bottom: -20px; width: 100%; display: flex; justify-content: space-around; color: #aaa;">
+             <div style="position: absolute; bottom: -40px; width: 100%; display: flex; justify-content: space-around; color: var(--neon-blue); font-size: 1.5rem; text-shadow: 0 0 10px var(--neon-blue);">
                 <span id="ruzgarName">TERRIER</span>
             </div>
         </div>
@@ -315,13 +264,11 @@
         <button class="btn" onclick="startStory()">Take a walk with Rüzgar</button>
     </div>
 
-    <!-- STORY SCREEN -->
     <div id="storyScreen" class="screen hidden" onclick="skipIntro()">
         <div class="story-text" id="storyText"></div>
         <div class="skip-hint">Tap to Skip</div>
     </div>
 
-    <!-- GAME OVER SCREEN -->
     <div id="gameOverScreen" class="screen hidden">
         <h1 style="color: #ff3333;">SIGNAL LOST</h1>
         <p class="story-text" style="font-size: 1.5rem;">But Rüzgar stayed.</p>
@@ -345,44 +292,42 @@
 <script>
 /**
  * NAX.TECH: RUN WITH RÜZGAR
- * A Single File HTML Game
+ * Updated: Fast & Vibrant
  */
 
 // --- CONFIGURATION ---
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 450;
 const GRAVITY = 0.6;
-const JUMP_FORCE = -12;
+const JUMP_FORCE = -13; // Slight boost to jump
 const GROUND_Y = 380;
 const SPRITE_SCALE = 3;
 
-// --- ASSETS: MULTIPLE VARIATIONS ---
+// --- ASSETS ---
 
-// 1. NAX VARIATIONS (Added 'hair' color)
+// 1. NAX VARIATIONS 
 const NAX_VARIANTS = [
-    { name: "PANDA NAX", colors: { hat: '#fff', hair: '#6b4226', skin: '#ffccaa', clothes: '#ff00ff', boots: '#00f3ff' } }, // Brown Hair
-    { name: "SAKURA NAX", colors: { hat: '#ffb7c5', hair: '#f4d03f', skin: '#ffe0bd', clothes: '#ff69b4', boots: '#fff' } }, // Blonde Hair
-    { name: "CYBER NAX", colors: { hat: '#333', hair: '#ff0055', skin: '#e0e0e0', clothes: '#00f3ff', boots: '#ffff00' } }  // Neon Pink Hair
+    { name: "PANDA NAX", colors: { hat: '#fff', hair: '#6b4226', skin: '#ffccaa', clothes: '#ff00ff', boots: '#00f3ff' } },
+    { name: "SAKURA NAX", colors: { hat: '#ffb7c5', hair: '#f4d03f', skin: '#ffe0bd', clothes: '#ff69b4', boots: '#fff' } },
+    { name: "CYBER NAX", colors: { hat: '#333', hair: '#ff0055', skin: '#e0e0e0', clothes: '#00f3ff', boots: '#ffff00' } }
 ];
 
-// Base Nax Matrix (Colors swapped dynamically)
-// H=Hat, S=Skin, C=Clothes, B=Boots, E=Eyes/Black Details, A=Hair (Long)
 const NAX_BASE_MATRIX = {
     idle: [
-        ['T','T','E','E','T','T','T','T','E','E','T','T'], // Panda Ears
-        ['T','E','H','H','E','T','T','E','H','H','E','T'], // Hat outline
-        ['E','H','H','H','H','H','H','H','H','H','H','E'], // Hat body
-        ['E','H','E','E','H','H','H','H','E','E','H','E'], // Eyes on hat
+        ['T','T','E','E','T','T','T','T','E','E','T','T'],
+        ['T','E','H','H','E','T','T','E','H','H','E','T'],
         ['E','H','H','H','H','H','H','H','H','H','H','E'],
-        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Face + Hair bangs/sides
-        ['A','A','S','E','S','S','S','S','E','S','A','A'], // Long Hair sides
-        ['A','A','S','S','S','C','C','S','S','S','A','A'], // Long Hair over shoulders
-        ['T','A','C','C','C','C','C','C','C','C','A','T'], // Hair tips
-        ['T','C','B','B','C','C','C','C','B','B','C','T'], // Arms/Hands
+        ['E','H','E','E','H','H','H','H','E','E','H','E'],
+        ['E','H','H','H','H','H','H','H','H','H','H','E'],
+        ['A','E','A','A','S','S','S','S','A','A','E','A'],
+        ['A','A','S','E','S','S','S','S','E','S','A','A'],
+        ['A','A','S','S','S','C','C','S','S','S','A','A'],
+        ['T','A','C','C','C','C','C','C','C','C','A','T'],
+        ['T','C','B','B','C','C','C','C','B','B','C','T'],
         ['T','B','T','T','C','C','C','C','T','T','B','T'], 
-        ['T','T','T','E','E','T','T','E','E','T','T','T'], // Legs
         ['T','T','T','E','E','T','T','E','E','T','T','T'],
-        ['T','T','T','B','B','T','T','B','B','T','T','T']  // Boots
+        ['T','T','T','E','E','T','T','E','E','T','T','T'],
+        ['T','T','T','B','B','T','T','B','B','T','T','T']
     ],
     run: [
         ['T','T','E','E','T','T','T','T','E','E','T','T'],
@@ -390,13 +335,13 @@ const NAX_BASE_MATRIX = {
         ['E','H','H','H','H','H','H','H','H','H','H','E'],
         ['E','H','E','E','H','H','H','H','E','E','H','E'],
         ['E','H','H','H','H','H','H','H','H','H','H','E'],
-        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Hair moving
-        ['A','T','S','E','S','S','S','S','E','S','T','A'], // Hair bouncing out
+        ['A','E','A','A','S','S','S','S','A','A','E','A'],
+        ['A','T','S','E','S','S','S','S','E','S','T','A'],
         ['A','A','S','S','S','C','C','S','S','S','A','A'], 
-        ['A','A','C','C','C','C','C','C','C','C','A','A'], // Hair flowing back
-        ['T','T','B','B','C','C','C','C','B','B','T','T'], // Arms
+        ['A','A','C','C','C','C','C','C','C','C','A','A'],
+        ['T','T','B','B','C','C','C','C','B','B','T','T'],
         ['T','B','T','T','C','C','C','C','T','T','B','T'], 
-        ['T','T','T','E','E','T','T','T','T','T','T','T'], // Legs
+        ['T','T','T','E','E','T','T','T','T','T','T','T'],
         ['T','T','T','E','E','T','T','E','E','T','T','T'],
         ['T','T','B','B','T','T','T','B','B','T','T','T']
     ],
@@ -409,9 +354,9 @@ const NAX_BASE_MATRIX = {
         ['E','H','H','H','H','H','H','H','H','H','H','E'], 
         ['E','H','E','E','H','H','H','H','E','E','H','E'], 
         ['E','H','H','H','H','H','H','H','H','H','H','E'],
-        ['A','E','A','A','S','S','S','S','A','A','E','A'], // Hair low
-        ['A','A','C','C','C','C','C','C','C','C','A','A'], // Hair covering shoulders
-        ['T','C','B','B','C','C','C','C','B','B','C','T'], // Arms out
+        ['A','E','A','A','S','S','S','S','A','A','E','A'],
+        ['A','A','C','C','C','C','C','C','C','C','A','A'],
+        ['T','C','B','B','C','C','C','C','B','B','C','T'],
         ['T','T','T','B','B','T','T','B','B','T','T','T'],
         ['T','T','T','B','B','T','T','B','B','T','T','T'],
         ['T','B','B','T','T','T','T','T','T','B','B','T']
@@ -420,13 +365,11 @@ const NAX_BASE_MATRIX = {
 
 // 2. RUZGAR VARIATIONS
 const RUZGAR_VARIANTS = [
-    { name: "TERRIER", colors: { base: '#fff', spot: '#000' } }, // White w/ Black Spots
-    { name: "COCOA", colors: { base: '#d2b48c', spot: '#8b4513' } }, // Tan w/ Brown Spots
-    { name: "MOON", colors: { base: '#eee', spot: '#aaa' } } // Grey/White
+    { name: "TERRIER", colors: { base: '#fff', spot: '#000' } },
+    { name: "COCOA", colors: { base: '#d2b48c', spot: '#8b4513' } },
+    { name: "MOON", colors: { base: '#eee', spot: '#aaa' } }
 ];
 
-// Base Ruzgar Matrix
-// B=Base Coat, S=Spot Color, E=Eyes/Nose (Black), R=Collar
 const RUZGAR_BASE_MATRIX = {
     idle: [
         ['T','S','T','T','T','T','S','T','T','T'], 
@@ -444,7 +387,7 @@ const RUZGAR_BASE_MATRIX = {
         ['T','S','B','B','B','B','S','T','T','T'],
         ['T','B','E','B','B','E','B','T','T','T'],
         ['T','B','B','E','E','B','B','T','T','T'],
-        ['T','T','R','R','R','R','T','T','T','T'],
+        ['T','T','R','R','R','R','T','T','T','T'], 
         ['T','B','B','S','S','B','B','T','T','T'], 
         ['T','B','B','S','S','B','B','T','B','B'], 
         ['T','T','B','T','T','B','T','T','T','T'], 
@@ -542,9 +485,10 @@ const ctx = canvas.getContext('2d');
 let frames = 0;
 let animationId;
 let isRunning = false;
-let gameSpeed = 5.0; 
+let gameSpeed = 8.5; // START FAST
 let score = 0;
 let hearts = 3;
+let invulnerabilityTimer = 0; // Fixes double damage
 
 // Selection State
 let currentNaxIndex = 0;
@@ -568,7 +512,7 @@ function resize() {
     canvas.height = CANVAS_HEIGHT;
     canvas.style.width = (CANVAS_WIDTH * scale) + 'px';
     canvas.style.height = (CANVAS_HEIGHT * scale) + 'px';
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false; // VITAL FOR CRISP PIXELS
 }
 window.addEventListener('resize', resize);
 resize();
@@ -660,7 +604,6 @@ class Entity {
         this.frameTimer = 0;
         this.crouching = false;
         
-        // Use base idle for size
         let baseMatrix = (type === 'nax') ? NAX_BASE_MATRIX.idle : RUZGAR_BASE_MATRIX.idle;
         this.baseH = baseMatrix.length * SPRITE_SCALE;
         this.w = baseMatrix[0].length * SPRITE_SCALE;
@@ -688,12 +631,14 @@ class Entity {
     }
 
     draw(ctx, isMoving) {
+        // Blink if invulnerable
+        if (invulnerabilityTimer > 0 && Math.floor(frames / 5) % 2 === 0) return;
+
         if (this.type === 'nax') {
             let variant = NAX_VARIANTS[currentNaxIndex];
             let frame = (this.crouching) ? NAX_BASE_MATRIX.crouch : 
-                        ((isMoving && Math.floor(this.frameTimer / 10) % 2 === 0) ? NAX_BASE_MATRIX.run : NAX_BASE_MATRIX.idle);
+                        ((isMoving && Math.floor(this.frameTimer / 8) % 2 === 0) ? NAX_BASE_MATRIX.run : NAX_BASE_MATRIX.idle);
             
-            // Adjust Y for crouch sprite empty space
             let drawY = this.y;
             if(this.crouching) drawY = GROUND_Y - (frame.length * SPRITE_SCALE);
 
@@ -701,7 +646,7 @@ class Entity {
 
         } else {
             let variant = RUZGAR_VARIANTS[currentRuzgarIndex];
-            let frame = (isMoving && Math.floor(this.frameTimer / 10) % 2 === 0) ? RUZGAR_BASE_MATRIX.run : RUZGAR_BASE_MATRIX.idle;
+            let frame = (isMoving && Math.floor(this.frameTimer / 8) % 2 === 0) ? RUZGAR_BASE_MATRIX.run : RUZGAR_BASE_MATRIX.idle;
             drawRuzgarSprite(ctx, frame, this.x, this.y, SPRITE_SCALE, variant);
         }
     }
@@ -784,7 +729,10 @@ function initGame() {
     player = new Entity(50, GROUND_Y, 'nax');
     ruzgar = new Entity(150, GROUND_Y, 'ruzgar');
     obstacles = []; items = []; particles = [];
-    score = 0; hearts = 3; gameSpeed = 5.0; frames = 0;
+    score = 0; hearts = 3; 
+    gameSpeed = 8.5; // Starts faster
+    frames = 0;
+    invulnerabilityTimer = 0;
     stats = { headphones: 0, food: 0, pills: 0 };
     initBackground();
     updateHUD();
@@ -801,7 +749,7 @@ function drawHUD(ctx) {
     const scale = 4; const startX = 20; const startY = 20; const gap = 30;
     for (let i = 0; i < hearts; i++) {
         let hX = startX + (i * gap);
-        drawGeneralSprite(ctx, HEART_SPRITE, hX, startY, scale); // Reusing general drawer
+        drawGeneralSprite(ctx, HEART_SPRITE, hX, startY, scale); 
     }
 }
 
@@ -819,27 +767,39 @@ function spawnLogic() {
     if (spawnTimer <= 0) {
         if (Math.random() > 0.4) obstacles.push(new Obstacle());
         else items.push(new Item());
-        let diff = Math.floor(score / 500); let base = 90 - (diff * 5); if (base < 40) base = 40;
-        spawnTimer = base + Math.random() * 30; 
+        // Reduce gap as speed increases, but safely
+        let diff = Math.floor(score / 500); 
+        let base = 70 - (diff * 5); // Spawns happen faster
+        if (base < 35) base = 35;
+        spawnTimer = base + Math.random() * 20; 
     }
 }
 
 function checkCollisions() {
-    // Shared collision logic
+    // If invulnerable, skip damage checks
+    if (invulnerabilityTimer > 0) {
+        invulnerabilityTimer--;
+        return; // Skip hit logic
+    }
+
     let hit = false;
     obstacles.forEach(obs => {
         if(!obs.markedForDeletion) {
-            // Check Ruzgar
             if(ruzgar.x < obs.x+obs.w-10 && ruzgar.x+ruzgar.w > obs.x+10 && ruzgar.y < obs.y+obs.h && ruzgar.y+ruzgar.h > obs.y) {
                 hit = true; createParticles(ruzgar.x, ruzgar.y, '#ff0000');
             }
-            // Check Nax
             if(!hit && player.x < obs.x+obs.w-10 && player.x+player.w > obs.x+10 && player.y < obs.y+obs.h && player.y+player.h > obs.y) {
                 hit = true; createParticles(player.x, player.y, '#ff0000');
             }
             if(hit) {
-                Audio.hit(); hearts--; damageShake = 15; obs.markedForDeletion = true;
-                Audio.bark(); ruzgar.dy = -5; if(hearts <= 0) gameOver();
+                Audio.hit(); 
+                hearts--; 
+                invulnerabilityTimer = 60; // 1 Second Invulnerability (60 frames)
+                damageShake = 15; 
+                // Don't delete obstacle immediately, just pass through it now
+                Audio.bark(); 
+                ruzgar.dy = -5; 
+                if(hearts <= 0) gameOver();
             }
         }
     });
@@ -864,36 +824,54 @@ function createParticles(x, y, color) { for(let i=0; i<8; i++) particles.push(ne
 function customizationLoop() {
     if (!isCustomizing) return;
     
-    // Brighter Background for vibrancy
-    ctx.fillStyle = '#1a0d26'; // Deep purple from game background
+    // Ensure crisp pixels
+    ctx.imageSmoothingEnabled = false; 
+
+    // 1. Dark Background
+    ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Draw Brighter Grid Background
-    ctx.strokeStyle = '#00f3ff'; // Neon blue grid
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 2;
+    // 2. Spotlight Effect (Radial Gradient)
+    let cx = CANVAS_WIDTH / 2;
+    let cy = CANVAS_HEIGHT / 2;
+    let grad = ctx.createRadialGradient(cx, cy, 20, cx, cy, 300);
+    grad.addColorStop(0, '#2a0033'); // Bright purple center
+    grad.addColorStop(1, '#000000'); // Dark edge
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 3. Draw Grid
+    ctx.strokeStyle = '#00f3ff';
+    ctx.globalAlpha = 0.2;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    for(let i=0; i<CANVAS_WIDTH; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,CANVAS_HEIGHT); }
-    for(let i=0; i<CANVAS_HEIGHT; i+=50) { ctx.moveTo(0,i); ctx.lineTo(CANVAS_WIDTH,i); }
+    for(let i=0; i<CANVAS_WIDTH; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,CANVAS_HEIGHT); }
+    for(let i=0; i<CANVAS_HEIGHT; i+=40) { ctx.moveTo(0,i); ctx.lineTo(CANVAS_WIDTH,i); }
     ctx.stroke();
     ctx.globalAlpha = 1.0;
 
-    // Draw Large Characters in Center
-    // Scale 6 for preview
+    // 4. Draw Characters (Scale 8 for Visibility)
     const PREVIEW_SCALE = 8;
+    
+    // Add Glow Effect for Vibrancy
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "white"; // White glow makes colors pop
     
     // Draw Nax
     let naxVar = NAX_VARIANTS[currentNaxIndex];
     let naxW = NAX_BASE_MATRIX.idle[0].length * PREVIEW_SCALE;
-    let naxX = (CANVAS_WIDTH / 2) - naxW - 20;
+    let naxX = (CANVAS_WIDTH / 2) - naxW - 30;
     let naxY = (CANVAS_HEIGHT / 2) - 80;
     drawNaxSprite(ctx, NAX_BASE_MATRIX.idle, naxX, naxY, PREVIEW_SCALE, naxVar);
 
     // Draw Ruzgar
     let ruzVar = RUZGAR_VARIANTS[currentRuzgarIndex];
-    let ruzX = (CANVAS_WIDTH / 2) + 20;
-    let ruzY = (CANVAS_HEIGHT / 2) - 30; // Dog is shorter, adjust Y
+    let ruzX = (CANVAS_WIDTH / 2) + 30;
+    let ruzY = (CANVAS_HEIGHT / 2) - 30; 
     drawRuzgarSprite(ctx, RUZGAR_BASE_MATRIX.idle, ruzX, ruzY, PREVIEW_SCALE, ruzVar);
+    
+    ctx.restore(); // Remove glow for next frame
 
     requestAnimationFrame(customizationLoop);
 }
@@ -949,7 +927,8 @@ function gameLoop() {
     
     drawHUD(ctx);
 
-    if (gameSpeed < 12) gameSpeed += 0.0005;
+    // Speed Cap
+    if (gameSpeed < 15) gameSpeed += 0.0008; 
     score += (gameSpeed / 10);
     updateHUD();
     spawnLogic();
