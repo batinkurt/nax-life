@@ -220,6 +220,18 @@
             cursor: pointer;
         }
 
+        /* Splash Screen Animation */
+        #splashScreen {
+            cursor: pointer;
+            background: black;
+        }
+        .tap-text {
+            font-size: 2rem;
+            color: var(--glitch-green);
+            animation: blink 1s infinite;
+            margin-top: 20px;
+        }
+
         .toast {
             position: absolute;
             bottom: 50px;
@@ -249,8 +261,14 @@
     
     <button class="music-btn hidden-btn" id="musicBtn" onclick="toggleMusic()">RETRO</button>
 
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen" class="screen" onclick="playIntro()">
+        <h1 style="font-size: 6rem;">NAX.LIFE</h1>
+        <div class="tap-text">[ TAP TO START ]</div>
+    </div>
+
     <!-- MAIN MENU -->
-    <div id="mainMenu" class="screen">
+    <div id="mainMenu" class="screen hidden">
         <h1>NAX.LIFE</h1>
         <h2>RUN WITH RÜZGAR</h2>
         
@@ -316,13 +334,13 @@
 <script>
 /**
  * NAX.LIFE: RUN WITH RÜZGAR
- * Version 7.2: Fixed HUD Overlap
+ * Version 10.0: Sezen Aksu Mode
  */
 
 // --- CONFIGURATION ---
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 450;
-const GRAVITY = 1.2;     
+const GRAVITY = 1.1;     
 const JUMP_FORCE = -16;  
 const GROUND_Y = 380;
 const SPRITE_SCALE = 3;
@@ -569,7 +587,7 @@ const Audio = {
 
 // --- MUSIC SYSTEM ---
 const Music = {
-    trackIndex: 0, // 0: Retro, 1: DnB, 2: Off
+    trackIndex: 0, // 0: Retro, 1: DnB, 2: Pirate, 3: Off
     isPlaying: false,
     timer: null,
     beat: 0,
@@ -592,6 +610,17 @@ const Music = {
             lead: [880, 0, 0, 659, 0, 0, 523, 0, 0, 0, 659, 0, 783, 0, 523, 0], // Smooth keys
             typeBass: 'sine',
             typeLead: 'triangle'
+        },
+        {
+            name: "PIRATE",
+            speed: 110, // Driving tempo
+            loopLen: 16,
+            // D minor driving bass: D - Bb - C - D
+            bass: [73.42, 0, 73.42, 0, 58.27, 0, 58.27, 0, 65.41, 0, 65.41, 0, 73.42, 0, 110, 0], 
+            // The Riff: D D D E F F F G E E D C D
+            lead: [293.6, 0, 293.6, 329.6, 349.2, 0, 349.2, 392, 329.6, 0, 329.6, 349.2, 293.6, 261.6, 293.6, 0],
+            typeBass: 'sawtooth', 
+            typeLead: 'square'
         }
     ],
 
@@ -633,7 +662,7 @@ const Music = {
 
 function toggleMusic() {
     Audio.init();
-    Music.trackIndex = (Music.trackIndex + 1) % 3; 
+    Music.trackIndex = (Music.trackIndex + 1) % (Music.tracks.length + 1); 
     
     // Update both buttons
     const hudBtn = document.getElementById('musicBtn');
@@ -642,7 +671,7 @@ function toggleMusic() {
     let label = "";
     let isOff = false;
 
-    if (Music.trackIndex === 2) {
+    if (Music.trackIndex === Music.tracks.length) {
         // OFF
         Music.stop();
         label = "OFF";
@@ -671,12 +700,19 @@ const ctx = canvas.getContext('2d');
 let frames = 0;
 let animationId;
 let isRunning = false;
-let gameSpeed = 8.0; 
+let gameSpeed = 6.0; // Lowered starting speed
 let score = 0;
 let hearts = 3;
 let invulnerabilityTimer = 0; 
 let currentZone = 'CITY'; // CITY or PARK
 let zoneTimer = 0;
+
+// Intro State
+let isIntro = false;
+let introTimer = 0;
+let introNaxX = -60;
+let introRuzX = -160;
+const INTRO_TARGET_X = CANVAS_WIDTH / 2;
 
 // Selection State
 let currentNaxIndex = 0;
@@ -704,6 +740,73 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+
+// --- INTRO LOGIC ---
+function playIntro() {
+    Audio.init();
+    Music.start(); // Start music on tap
+    document.getElementById('splashScreen').classList.add('hidden');
+    isIntro = true;
+    isMenu = false; // Disable standard menu loop
+    introLoop();
+}
+
+function introLoop() {
+    if(!isIntro) return;
+
+    ctx.imageSmoothingEnabled = false;
+    
+    // Draw BG (City)
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    let cx = CANVAS_WIDTH / 2; let cy = CANVAS_HEIGHT / 2;
+    let grad = ctx.createRadialGradient(cx, cy, 20, cx, cy, 300);
+    grad.addColorStop(0, '#2a0033'); grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Floor
+    ctx.strokeStyle = '#00f3ff'; ctx.globalAlpha = 0.2; ctx.lineWidth = 1; ctx.beginPath();
+    for(let i=0; i<CANVAS_WIDTH; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,CANVAS_HEIGHT); }
+    for(let i=0; i<CANVAS_HEIGHT; i+=40) { ctx.moveTo(0,i); ctx.lineTo(CANVAS_WIDTH,i); }
+    ctx.stroke(); ctx.globalAlpha = 1.0;
+
+    // Logic
+    let walkedIn = false;
+    if (introNaxX < INTRO_TARGET_X - 40) { introNaxX += 4; }
+    if (introRuzX < INTRO_TARGET_X + 40) { introRuzX += 4; } else { walkedIn = true; }
+
+    const PREVIEW_SCALE = 5;
+    
+    // Draw Characters
+    let naxY = (CANVAS_HEIGHT / 2) - 30;
+    let ruzY = (CANVAS_HEIGHT / 2) + 20;
+
+    let naxFrame = (!walkedIn && Math.floor(frames/10)%2===0) ? NAX_BASE_MATRIX.run : NAX_BASE_MATRIX.idle;
+    let ruzFrame = (!walkedIn && Math.floor(frames/10)%2===0) ? RUZGAR_BASE_MATRIX.run : RUZGAR_BASE_MATRIX.idle;
+
+    drawNaxSprite(ctx, naxFrame, introNaxX, naxY, PREVIEW_SCALE, NAX_VARIANTS[currentNaxIndex]);
+    drawRuzgarSprite(ctx, ruzFrame, introRuzX, ruzY, PREVIEW_SCALE, RUZGAR_VARIANTS[currentRuzgarIndex]);
+
+    // Heart Popup
+    if (walkedIn) {
+        introTimer++;
+        if (introTimer > 20) {
+            let heartY = naxY - 60 + Math.sin(frames * 0.1) * 5;
+            drawGeneralSprite(ctx, ICON_HEART, INTRO_TARGET_X - 10, heartY, 4);
+        }
+        if (introTimer > 150) {
+            // End Intro
+            isIntro = false;
+            isMenu = true;
+            document.getElementById('mainMenu').classList.remove('hidden');
+            customizationLoop();
+            return;
+        }
+    }
+
+    frames++;
+    requestAnimationFrame(introLoop);
+}
 
 // --- CUSTOMIZATION LOGIC ---
 function changeChar(type, dir) {
@@ -877,14 +980,17 @@ class Obstacle {
              this.y = GROUND_Y - (this.sprite.length * this.scale);
         } else if (this.type === 'TV') {
             this.sprite = TV_SPRITE; 
-            this.y = GROUND_Y - 95; 
+            // Adjusted: Lowered even further to ensure crouching is needed
+            this.y = GROUND_Y - 67; // Bottom around 313
         } else if (this.type === 'DRONE') {
             this.sprite = DRONE_SPRITE; 
-            this.y = GROUND_Y - 90; 
+            // Adjusted
+            this.y = GROUND_Y - 63; // Bottom around 317
         } else {
             this.type = 'SIGN';
             this.sprite = SIGN_SPRITE;
-            this.y = GROUND_Y - 110;
+            // Adjusted
+            this.y = GROUND_Y - 55; // Bottom around 325
         }
         
         this.w = this.sprite[0].length * this.scale;
@@ -980,7 +1086,7 @@ function initGame() {
     ruzgar = new Entity(150, GROUND_Y, 'ruzgar');
     obstacles = []; items = []; particles = [];
     score = 0; hearts = 3; 
-    gameSpeed = 8.0; 
+    gameSpeed = 6.0; // Reset to 6.0 on restart
     frames = 0;
     invulnerabilityTimer = 0;
     stats = { headphones: 0, food: 0, pills: 0 };
@@ -1129,7 +1235,7 @@ function customizationLoop() {
     for(let i=0; i<CANVAS_HEIGHT; i+=40) { ctx.moveTo(0,i); ctx.lineTo(CANVAS_WIDTH,i); }
     ctx.stroke(); ctx.globalAlpha = 1.0;
 
-    const PREVIEW_SCALE = 8;
+    const PREVIEW_SCALE = 5;
     ctx.save();
     ctx.shadowBlur = 20; ctx.shadowColor = "white"; 
     
@@ -1209,7 +1315,8 @@ function gameLoop() {
     
     drawHUD(ctx);
 
-    if (gameSpeed < 22) gameSpeed += 0.002; 
+    // Slower Speed Acceleration
+    if (gameSpeed < 22) gameSpeed += 0.0003; 
     score += (gameSpeed / 10);
     
     spawnLogic();
@@ -1319,7 +1426,14 @@ function shareStats() {
     document.body.removeChild(textarea);
 }
 
-customizationLoop();
+// Check for intro skipping if already seen
+if(localStorage.getItem('introSeen')) {
+    document.getElementById('splashScreen').style.display = 'none';
+    document.getElementById('mainMenu').classList.remove('hidden');
+    customizationLoop();
+} else {
+    // Wait for click on splash
+}
 
 </script>
 </body>
